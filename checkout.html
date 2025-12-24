@@ -1,0 +1,220 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Checkout - M G S Blossom Flower Shop</title>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{font-family:Arial,sans-serif;background:#fff8f4;color:#333;padding:20px;}
+h1{color:#800020;text-align:center;}
+.checkout-container{max-width:900px;margin:auto;display:flex;gap:20px;flex-wrap:wrap;}
+form,.cart-summary{flex:1;background:white;padding:20px;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.1);}
+label{display:block;margin-top:12px;font-weight:bold;}
+input,textarea{width:100%;padding:10px;margin-top:5px;border-radius:5px;border:1px solid #ccc;}
+.cart-item{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ddd;padding:8px 0;}
+.cart-item img{width:50px;height:50px;border-radius:5px;}
+.cart-item-details{flex:1;margin-left:10px;}
+.total{text-align:right;font-size:18px;font-weight:bold;margin-top:10px;}
+
+.payment-option label{
+  display:inline-block;
+  background:#ff1493;
+  color:#fff;
+  padding:6px 14px;
+  border-radius:20px;
+  font-weight:bold;
+}
+.payment-option p{font-size:12px;color:#555;margin-top:6px;}
+
+.buttons-row{display:flex;justify-content:space-between;margin-top:20px;}
+button{padding:10px 20px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;}
+.back-btn{background:green;color:white;}
+#placeOrderBtn{background:#ff1493;color:white;}
+</style>
+</head>
+
+<body>
+
+<h1>Checkout</h1>
+
+<div class="checkout-container">
+
+<form id="checkoutForm">
+  <label>Full Name</label>
+  <input type="text" id="name" required>
+
+  <label>Email</label>
+  <input type="email" id="email" required>
+
+  <label>Phone</label>
+  <input type="tel" id="phone" required>
+
+  <label>Shipping Address</label>
+  <textarea id="address" rows="4" required></textarea>
+
+  <div class="payment-option">
+    <label>Cash on Delivery</label>
+    <p>
+      ✅ Delivery within 5 days <br>
+      ✅ Only Cash on Delivery available <br>
+      ✅ No online payment
+    </p>
+    <label style="font-size:12px;">
+      <input type="checkbox" id="terms" required>
+      I agree to COD terms & conditions
+    </label>
+  </div>
+
+  <div class="buttons-row">
+    <button type="button" class="back-btn" onclick="location.href='index1.html'">Back to Home</button>
+    <button type="submit" id="placeOrderBtn">Place Order</button>
+  </div>
+</form>
+
+<div class="cart-summary">
+  <h2>Order Summary</h2>
+  <div id="cartItems"></div>
+  <div class="total">Total: ₹<span id="cartTotal">0</span></div>
+</div>
+
+</div>
+
+<script>
+let cart = JSON.parse(localStorage.getItem("cart")) || {};
+const cartItemsDiv = document.getElementById("cartItems");
+const cartTotalSpan = document.getElementById("cartTotal");
+
+function loadCart(){
+  let total=0;
+  cartItemsDiv.innerHTML="";
+  for(let k in cart){
+    let i=cart[k];
+    total+=i.price*i.qty;
+    cartItemsDiv.innerHTML+=`
+      <div class="cart-item">
+        <img src="${i.image}">
+        <div class="cart-item-details">
+          <div>${i.name}</div>
+          <small>Qty: ${i.qty}</small>
+        </div>
+        <div>₹${i.price*i.qty}</div>
+      </div>`;
+  }
+  cartTotalSpan.innerText=total;
+}
+loadCart();
+
+document.getElementById("checkoutForm").addEventListener("submit",function(e){
+  e.preventDefault();
+
+  if(Object.keys(cart).length===0){
+    Swal.fire("Oops","Cart is empty","error");
+    return;
+  }
+  if(!terms.checked){
+    Swal.fire("Oops","Accept COD terms","warning");
+    return;
+  }
+
+  const order={
+    name:document.getElementById("name").value,
+    email:document.getElementById("email").value,
+    phone:document.getElementById("phone").value,
+    address:document.getElementById("address").value,
+    cart:cart,
+    total:cartTotalSpan.innerText
+  };
+
+  Swal.fire({
+    title:"Order Placed Successfully 🎉",
+    text:"Choose an option below",
+    icon:"success",
+    showCancelButton:true,
+    confirmButtonText:"⬇ Download Invoice",
+    cancelButtonText:"✔ Finish"
+  }).then((result)=>{
+    if(result.isConfirmed){
+      generatePDF(order);
+    }
+    localStorage.removeItem("cart");
+    setTimeout(()=>location.href="index1.html",1000);
+  });
+});
+
+/* ================= PDF WITH NAME + DATE TIME ================= */
+
+function generatePDF(order){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  /* 🔴 BACKGROUND IMAGE (Base64) */
+  const BG_IMAGE_BASE64 = ""; // paste base64 image here
+  if(BG_IMAGE_BASE64){
+    doc.addImage(BG_IMAGE_BASE64,"JPEG",0,0,210,297);
+  }
+
+  const now = new Date();
+  const dateTime = now.toLocaleString("en-IN");
+
+  doc.setFillColor(128,0,32);
+  doc.rect(0,0,210,28,"F");
+  doc.setTextColor(255);
+  doc.setFontSize(18);
+  doc.text("M G S Blossom Flower Shop",105,18,null,null,"center");
+
+  doc.setFontSize(10);
+  doc.text(`Invoice Date & Time : ${dateTime}`,105,25,null,null,"center");
+
+  doc.setTextColor(0);
+  let y = 38;
+  doc.setFontSize(12);
+  doc.text(`Customer Name : ${order.name}`,20,y); y+=6;
+  doc.text(`Phone : ${order.phone}`,20,y); y+=6;
+  doc.text(`Email : ${order.email}`,20,y); y+=6;
+  doc.text(`Address : ${order.address}`,20,y); y+=10;
+
+  doc.setFillColor(255,20,147);
+  doc.rect(20,y,170,10,"F");
+  doc.setTextColor(255);
+  doc.text("Item Name",25,y+7);
+  doc.text("Qty",120,y+7);
+  doc.text("Amount",150,y+7);
+  y+=10;
+
+  doc.setTextColor(0);
+  Object.values(order.cart).forEach(i=>{
+    doc.rect(20,y,170,10);
+    doc.text(i.name,25,y+7);
+    doc.text(String(i.qty),125,y+7);
+    doc.text("₹"+(i.price*i.qty),150,y+7);
+    y+=10;
+  });
+
+  doc.setFillColor(240,240,240);
+  doc.rect(20,y,170,12,"F");
+  doc.setFontSize(14);
+  doc.setTextColor(128,0,32);
+  doc.text(`Total Amount : ₹${order.total}`,130,y+8);
+
+  y+=20;
+  doc.setFontSize(11);
+  doc.setTextColor(0);
+  doc.text("Payment Method : Cash on Delivery",20,y);
+y+=20;
+doc.text("Terms & Conditions:",20,y); y+=6;
+  doc.setFontSize(10);
+  doc.text("• Delivery within 5 days",20,y); y+=5;
+  doc.text("• Only Cash on Delivery available",20,y); y+=5;
+  doc.text("• No cancellation after dispatch",20,y); y+=5;
+  doc.text("• No return after delivery",20,y);
+
+
+  doc.save("MGS-Blossom-Invoice.pdf");
+}
+</script>
+
+</body>
+</html>

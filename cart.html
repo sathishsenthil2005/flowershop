@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cart - M G S Blossom</title>
+<style>
+body{font-family:Arial,sans-serif;background:#fff8f4;color:#333;padding:20px;}
+h1{color:#800020;margin-bottom:20px;}
+.cart-item{display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding:10px; background:#fff0f5; border-radius:8px;}
+.cart-item input{width:50px; margin:0 10px;}
+button{padding:7px 12px; cursor:pointer; border:none; border-radius:5px; font-weight:bold;}
+.remove-btn{background:red; color:white;}
+.back-btn{background:green; color:white; margin-top:20px; margin-right:10px;}
+.checkout-btn{background:#ff1493; color:white; margin-top:20px;}
+.total{margin-top:20px;font-weight:bold;font-size:18px;}
+.cart-buttons{margin-top:20px;}
+</style>
+</head>
+<body>
+
+<h1>Your Cart</h1>
+<div id="cartItems"></div>
+<h3 class="total">Total: ₹<span id="cartTotal">0</span></h3>
+
+<div class="cart-buttons">
+  <button class="back-btn" onclick="window.location.href='index1.html'">Back to Home</button>
+  <button class="checkout-btn" onclick="window.location.href='checkout.html'">Checkout</button>
+
+</div>
+
+<script>
+let cart=JSON.parse(localStorage.getItem("cart"))||{};
+
+function updateCart(){
+  const cartItems=document.getElementById("cartItems");
+  const cartTotal=document.getElementById("cartTotal");
+  cartItems.innerHTML="";
+  let total=0;
+  for(let key in cart){
+    let item=cart[key];
+    total+=item.price*item.qty;
+    const div=document.createElement("div");
+    div.className="cart-item";
+    div.innerHTML=`<span>${item.name} (₹${item.price}) x </span>
+                   <input type="number" min="1" value="${item.qty}">
+                   <span>₹${item.price*item.qty}</span>
+                   <button class="remove-btn">Remove</button>`;
+    
+    // Quantity change
+    div.querySelector("input").addEventListener("change", function(){
+      let val=parseInt(this.value);
+      if(val<1) val=1;
+      item.qty=val;
+      localStorage.setItem("cart", JSON.stringify(cart));
+      updateCart();
+    });
+
+    // Remove item
+    div.querySelector(".remove-btn").addEventListener("click", function(){
+      delete cart[key];
+      localStorage.setItem("cart", JSON.stringify(cart));
+      updateCart();
+    });
+
+    cartItems.appendChild(div);
+  }
+  cartTotal.innerText=total;
+}
+
+// Checkout simulation
+function checkout(){
+  if(Object.keys(cart).length === 0){
+    alert("Your cart is empty!");
+    return;
+  }
+  alert("Thank you for your purchase!");
+  cart={};
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCart();
+}
+
+updateCart();
+</script>
+
+</body>
+</html>
